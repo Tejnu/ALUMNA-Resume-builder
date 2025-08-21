@@ -106,7 +106,8 @@ export function JobMatchAnalyzer({ resumeData, onOptimize }: JobMatchAnalyzerPro
     });
 
     // Remove duplicates and variations
-    const uniqueJobKeywords = [...new Set(jobKeywords)];
+    const uniqueJobKeywords = Array.from(new Set(jobKeywords));
+
 
     // Analyze resume skills against job requirements with context
     const resumeSkills = (resumeData.skills || []).map(s => s.name.toLowerCase());
