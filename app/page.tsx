@@ -31,7 +31,6 @@ const initialResumeData: ResumeData = {
   certifications: [],
   projects: [],
   languages: [],
-  references: [],
   customSections: [],
   selectedTemplate: 'modern'
 };

@@ -79,9 +79,15 @@ export interface ResumeData {
   projects: Project[];
   certifications: Certification[];
   languages: Language[];
+  references?: Reference[];  // Include this if you want to have references
   customSections?: CustomSection[];
 }
 
+export interface Reference {
+  id: string;
+  name: string;
+  contactInfo: string;
+}
 export type ResumeTemplate = 'modern' | 'classic' | 'minimal' | 'creative' | 'executive' | 'technical';
 
 export interface ResumeState {
