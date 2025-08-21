@@ -58,123 +58,101 @@ export function ResumePreview({ resumeData }: ResumePreviewProps) {
   };
 
   const handleDownloadPDF = async () => {
-    setIsDownloading(true);
+    if (isDownloading) return;
 
+    setIsDownloading(true);
     try {
+      // Dynamically import html2pdf
+      const html2pdf = (await import('html2pdf.js')).default;
+
       const element = document.getElementById('resume-preview-content');
       if (!element) {
         console.error('Resume preview element not found');
-        setIsDownloading(false);
         return;
       }
 
-      // Get all computed styles from the current document
-      const allStyles = Array.from(document.styleSheets)
-        .map(styleSheet => {
-          try {
-            return Array.from(styleSheet.cssRules)
-              .map(rule => rule.cssText)
-              .join('\n');
-          } catch (e) {
-            return '';
-          }
-        })
-        .join('\n');
-
-      // Clone the element and get its full HTML
+      // Clone the element to avoid modifying the original
       const clonedElement = element.cloneNode(true) as HTMLElement;
-      
-      // Create print window with all styles preserved
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>${resumeData.personalInfo?.fullName || 'Resume'} - Resume</title>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <style>
-                ${allStyles}
-                
-                /* Additional print optimizations */
-                * {
-                  -webkit-print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-                
-                body {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  background: white !important;
-                  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-                }
-                
-                .resume-preview-content, #resume-preview-content {
-                  width: 100% !important;
-                  max-width: none !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  background: white !important;
-                  box-shadow: none !important;
-                  border-radius: 0 !important;
-                  transform: none !important;
-                  overflow: visible !important;
-                  height: auto !important;
-                }
-                
-                /* Preserve gradients and colors */
-                .bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-l {
-                  -webkit-print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                }
-                
-                /* Ensure proper spacing */
-                .p-8 { padding: 2rem !important; }
-                .p-6 { padding: 1.5rem !important; }
-                .p-4 { padding: 1rem !important; }
-                .mb-8 { margin-bottom: 2rem !important; }
-                .mb-6 { margin-bottom: 1.5rem !important; }
-                .mb-4 { margin-bottom: 1rem !important; }
-                
-                @page { 
-                  size: A4; 
-                  margin: 0.5in; 
-                }
-                
-                @media print {
-                  body { 
-                    margin: 0 !important; 
-                    padding: 0 !important;
-                  }
-                  
-                  .no-print, .download-controls {
-                    display: none !important;
-                  }
-                }
-              </style>
-            </head>
-            <body>
-              <div id="resume-preview-content" class="resume-preview-content">
-                ${clonedElement.innerHTML}
-              </div>
-              <script>
-                setTimeout(function() {
-                  window.print();
-                  setTimeout(function() {
-                    window.close();
-                  }, 500);
-                }, 1000);
-              </script>
-            </body>
-          </html>
-        `);
-        
-        printWindow.document.close();
-      }
+
+      // Create a temporary container with proper styling
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '210mm'; // A4 width
+      container.style.backgroundColor = 'white';
+      container.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+      // Apply styles to the cloned element
+      clonedElement.style.width = '100%';
+      clonedElement.style.maxWidth = 'none';
+      clonedElement.style.margin = '0';
+      clonedElement.style.padding = '20px';
+      clonedElement.style.backgroundColor = 'white';
+      clonedElement.style.boxShadow = 'none';
+      clonedElement.style.borderRadius = '0';
+      clonedElement.style.transform = 'none';
+
+      container.appendChild(clonedElement);
+      document.body.appendChild(container);
+
+      const options = {
+        margin: [10, 10, 10, 10],
+        filename: `${resumeData.personalInfo?.fullName?.replace(/\s+/g, '_') || 'Resume'}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: 794, // A4 width in pixels at 96 DPI
+          height: 1123, // A4 height in pixels at 96 DPI
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        }
+      };
+
+      await html2pdf().set(options).from(container).save();
+
+      // Clean up
+      document.body.removeChild(container);
+
     } catch (error) {
       console.error('Error downloading PDF:', error);
+
+      // Fallback to print method
+      const element = document.getElementById('resume-preview-content');
+      if (element) {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>${resumeData.personalInfo?.fullName || 'Resume'} - Resume</title>
+                <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: system-ui, sans-serif; line-height: 1.5; color: #333; background: white; }
+                  @page { size: A4; margin: 0.75in; }
+                  @media print { body { margin: 0; } }
+                </style>
+              </head>
+              <body>
+                ${element.innerHTML}
+                <script>
+                  setTimeout(() => { window.print(); setTimeout(() => window.close(), 100); }, 500);
+                </script>
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+        }
+      }
     } finally {
       setIsDownloading(false);
     }
