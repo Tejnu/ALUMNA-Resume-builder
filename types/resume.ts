@@ -81,6 +81,7 @@ export interface ResumeData {
   languages: Language[];
   references?: Reference[];  // Include this if you want to have references
   customSections?: CustomSection[];
+  selectedTemplate: ResumeTemplate;
 }
 
 export interface Reference {

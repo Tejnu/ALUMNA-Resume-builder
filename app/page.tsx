@@ -32,7 +32,7 @@ const initialResumeData: ResumeData = {
   projects: [],
   languages: [],
   customSections: [],
-
+  selectedTemplate: 'modern'
 };
 
 export default function Home() {
