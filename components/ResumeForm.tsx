@@ -171,7 +171,7 @@ export function ResumeForm({ resumeData, onUpdate }: ResumeFormProps) {
             <TabsContent value="languages">
               <LanguagesForm
                 languages={organizedResumeData.languages}
-                onUpdate={(languages) => onUpdate({ languages })}
+                 onChange={(languages) => onUpdate({ languages })}
               />
             </TabsContent>
           </div>
