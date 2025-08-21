@@ -43,34 +43,64 @@ export async function POST(req: Request) {
     // Try to use pdf-parse with better error handling
     let result;
     try {
-      // Create a minimal pdf-parse implementation to avoid test file issues
       const pdfParse = await import('pdf-parse').then(module => module.default || module);
       
       result = await pdfParse(buffer, {
         max: 0, // parse all pages
-        version: 'v1.10.1'
+        version: 'default'
       });
-    } catch (parseError: any) {
-      console.error('PDF parsing error:', parseError);
       
-      // Fallback: try to extract basic text using a simpler approach
+      console.log('PDF parse successful, text length:', result.text?.length || 0);
+      
+    } catch (parseError: any) {
+      console.error('PDF parsing error:', parseError?.message || parseError);
+      
+      // Enhanced fallback: try multiple extraction methods
       try {
-        const textContent = buffer.toString('utf8');
-        const cleanText = textContent.replace(/[^\x20-\x7E\n\r]/g, ' ').trim();
+        // Method 1: Try extracting raw text from buffer
+        let textContent = buffer.toString('utf8');
+        let cleanText = textContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
         
-        if (cleanText.length > 50) {
+        // Method 2: If that fails, try latin1 encoding
+        if (cleanText.length < 50) {
+          textContent = buffer.toString('latin1');
+          cleanText = textContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+        
+        // Method 3: Try to find text patterns in hex representation
+        if (cleanText.length < 50) {
+          const hexString = buffer.toString('hex');
+          const textMatches = hexString.match(/[a-fA-F0-9]{2}/g);
+          if (textMatches) {
+            cleanText = textMatches
+              .map(hex => String.fromCharCode(parseInt(hex, 16)))
+              .join('')
+              .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+          }
+        }
+        
+        if (cleanText.length > 20) {
           result = {
             text: cleanText,
             numpages: 1,
-            info: {}
+            info: { Title: 'Extracted Resume' }
           };
+          console.log('Fallback extraction successful, text length:', cleanText.length);
         } else {
-          throw new Error('No readable text found');
+          throw new Error('No readable text found in PDF');
         }
-      } catch {
+      } catch (fallbackError) {
+        console.error('Fallback extraction failed:', fallbackError);
         return new NextResponse(
           JSON.stringify({ 
-            error: 'Unable to parse PDF. The file may be image-based, encrypted, or corrupted. Please try uploading a DOCX or TXT file instead.' 
+            error: 'Unable to parse PDF. The file may be image-based, password-protected, or corrupted. Please try uploading a DOCX or TXT file instead.',
+            details: parseError?.message || 'PDF parsing failed'
           }), 
           { status: 400, headers }
         );
