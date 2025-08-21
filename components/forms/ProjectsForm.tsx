@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
@@ -9,56 +10,33 @@ import { Project } from '@/types/resume';
 
 interface ProjectsFormProps {
   projects: Project[];
-  onChange?: (projects: Project[]) => void;
-  onUpdate?: (projects: Project[]) => void; // added for ResumeForm's prop name
+  onChange: (projects: Project[]) => void;
 }
 
-export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsFormProps) {
-  const callCallbacks = (updated: Project[]) => {
-    if (typeof onChange === 'function') onChange(updated);
-    if (typeof onUpdate === 'function') onUpdate(updated);
-  };
-
+export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
   const addProject = () => {
     const newProject: Project = {
       id: Date.now().toString(),
       title: '',
       description: '',
-      technologies: [],    // keep as string[]
+      technologies: '',
       startDate: '',
       endDate: '',
-      link: ''             // match Project.link
+      url: ''
     };
-    callCallbacks([...projects, newProject]);
+    onChange([...projects, newProject]);
   };
 
   const updateProject = (id: string, field: keyof Project, value: string) => {
-    const updated = projects.map(project => {
-      if (project.id !== id) return project;
-
-      // handle technologies (string[] input as comma-separated)
-      if (field === 'technologies') {
-        const techs = value
-          .split(',')
-          .map(t => t.trim())
-          .filter(Boolean);
-        return { ...project, technologies: techs } as Project;
-      }
-
-      // handle link (was url in old code)
-      if (field === 'link') {
-        return { ...project, link: value } as Project;
-      }
-
-      // default: assign string fields (title, description, startDate, endDate)
-      return { ...(project as any), [field]: value } as Project;
-    });
-
-    callCallbacks(updated);
+    onChange(
+      projects.map(project =>
+        project.id === id ? { ...project, [field]: value } : project
+      )
+    );
   };
 
   const removeProject = (id: string) => {
-    callCallbacks(projects.filter(project => project.id !== id));
+    onChange(projects.filter(project => project.id !== id));
   };
 
   return (
@@ -91,7 +69,7 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
               <div>
                 <label className="block text-sm font-medium mb-1">Project Title</label>
                 <Input
-                  value={project.title || ''}
+                  value={project.title}
                   onChange={(e) => updateProject(project.id, 'title', e.target.value)}
                   placeholder="e.g., E-commerce Platform"
                 />
@@ -99,8 +77,8 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
               <div>
                 <label className="block text-sm font-medium mb-1">Project URL</label>
                 <Input
-                  value={(project.link as string) || ''}
-                  onChange={(e) => updateProject(project.id, 'link', e.target.value)}
+                  value={project.url || ''}
+                  onChange={(e) => updateProject(project.id, 'url', e.target.value)}
                   placeholder="https://github.com/yourproject"
                 />
               </div>
@@ -111,7 +89,7 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
                 <label className="block text-sm font-medium mb-1">Start Date</label>
                 <Input
                   type="month"
-                  value={project.startDate || ''}
+                  value={project.startDate}
                   onChange={(e) => updateProject(project.id, 'startDate', e.target.value)}
                 />
               </div>
@@ -119,7 +97,7 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
                 <label className="block text-sm font-medium mb-1">End Date</label>
                 <Input
                   type="month"
-                  value={project.endDate || ''}
+                  value={project.endDate}
                   onChange={(e) => updateProject(project.id, 'endDate', e.target.value)}
                 />
               </div>
@@ -128,7 +106,7 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
             <div>
               <label className="block text-sm font-medium mb-1">Technologies Used</label>
               <Input
-                value={((project.technologies || []) as string[]).join(', ')}
+                value={project.technologies || ''}
                 onChange={(e) => updateProject(project.id, 'technologies', e.target.value)}
                 placeholder="React, Node.js, MongoDB, AWS"
               />
@@ -137,7 +115,7 @@ export function ProjectsForm({ projects = [], onChange, onUpdate }: ProjectsForm
             <div>
               <label className="block text-sm font-medium mb-1">Description</label>
               <Textarea
-                value={project.description || ''}
+                value={project.description}
                 onChange={(e) => updateProject(project.id, 'description', e.target.value)}
                 placeholder="Describe the project, your role, and key achievements..."
                 rows={4}

@@ -235,11 +235,9 @@ ${textChunks[0].slice(0, 20000)}`
       result.skills = uniqueSkills.slice(0, 30).map((name: string, i: number) => ({
         id: String(Date.now() + i),
         name: name.slice(0, 50),
-        level: 'Intermediate' as const,
-        category: 'Technical' as const // Add the missing category property
+        level: 'Intermediate' as const
       }));
-
-
+    }
 
     // Work Experience with enhanced validation
     if (Array.isArray(parsed.workExperience)) {
@@ -419,10 +417,8 @@ function buildResumeDataFromText(text: string): Partial<ResumeData> {
           skills.push({
             id: String(Date.now() + idx),
             name: skill,
-            level: 'Intermediate' as const,
-            category: 'Technical' as const // Add the missing category property
+            level: 'Intermediate' as const
           });
-
         }
       });
       break;
@@ -436,11 +432,8 @@ function buildResumeDataFromText(text: string): Partial<ResumeData> {
         skills.push({
           id: String(Date.now() + idx),
           name: skill,
-          level: 'Intermediate' as const,
-          category: 'Technical' as const // Add the missing category property
+          level: 'Intermediate' as const
         });
-
-
       }
     });
   }
@@ -786,8 +779,7 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
               skills: (aiData.skills || []).map((skill: string, i: number) => ({
                 id: `skill_${Date.now()}_${i}`,
                 name: skill,
-                level: 'Intermediate' as const,
-                category: 'Technical' as const // Add the missing category property
+                level: 'Intermediate' as const
               })),
               certifications: [],
               projects: [],

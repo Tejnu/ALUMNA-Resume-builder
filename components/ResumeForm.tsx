@@ -28,16 +28,13 @@ const validateAndOrganizeData = (data: ResumeData): ResumeData => {
   }
 
   // Sort education by graduation date (most recent first)
-  // Sort education by endDate (graduation) — most recent first.
-  // Fallback to startDate if endDate is missing, and to a safe default otherwise.
   if (organized.education && organized.education.length > 0) {
     organized.education.sort((a, b) => {
-      const dateA = new Date(a.endDate || a.startDate || '2000-01-01');
-      const dateB = new Date(b.endDate || b.startDate || '2000-01-01');
+      const dateA = new Date(a.graduationDate || '2000-01-01');
+      const dateB = new Date(b.graduationDate || '2000-01-01');
       return dateB.getTime() - dateA.getTime();
     });
   }
-
 
   // Organize skills by removing duplicates and sorting alphabetically
   if (organized.skills && organized.skills.length > 0) {
@@ -171,7 +168,7 @@ export function ResumeForm({ resumeData, onUpdate }: ResumeFormProps) {
             <TabsContent value="languages">
               <LanguagesForm
                 languages={organizedResumeData.languages}
-                 onChange={(languages) => onUpdate({ languages })}
+                onUpdate={(languages) => onUpdate({ languages })}
               />
             </TabsContent>
           </div>
