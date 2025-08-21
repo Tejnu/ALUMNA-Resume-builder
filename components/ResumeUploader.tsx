@@ -612,31 +612,26 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
         try {
           const resp = await fetch('/api/parse-pdf', { 
             method: 'POST', 
-            body,
-            headers: {
-              'Accept': 'application/json',
-            }
+            body
           });
           
-          const contentType = resp.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            // Server returned HTML or other non-JSON response
-            throw new Error('PDF parsing service is temporarily unavailable. Please try uploading a DOCX or TXT file instead.');
+          if (!resp.ok) {
+            const errorData = await resp.json().catch(() => ({}));
+            throw new Error(errorData.error || `PDF parsing failed with status ${resp.status}`);
           }
           
           const data = await resp.json();
-          if (!resp.ok) {
-            if (resp.status === 503) {
-              throw new Error('PDF parsing service is temporarily unavailable. Please try uploading a DOCX or TXT file instead.');
-            }
-            throw new Error(data?.error || 'Failed to parse PDF');
-          }
           rawText = data.text || '';
-        } catch (error) {
-          if (error instanceof SyntaxError) {
-            throw new Error('PDF parsing service encountered an error. Please try uploading a DOCX or TXT file instead.');
+          
+          if (!rawText || rawText.length < 10) {
+            throw new Error('No text could be extracted from the PDF. Please try a DOCX or TXT file.');
           }
-          throw error;
+          
+          console.log('PDF parsed successfully, text length:', rawText.length);
+          
+        } catch (error) {
+          console.error('PDF parsing error:', error);
+          throw error instanceof Error ? error : new Error('Failed to parse PDF file');
         }
       } else if (isDocx) {
         rawText = await extractTextFromDocx(file);

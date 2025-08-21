@@ -28,7 +28,8 @@ export function ResumePreview({ resumeData }: ResumePreviewProps) {
       <Card className="bg-white border border-gray-200 shadow-sm sticky top-24 h-fit">
         <div className="p-6">
           <div className="text-center text-gray-500">
-            Loading resume preview...
+            <div className="mb-2">📄</div>
+            <p>Upload a resume to see the live preview</p>
           </div>
         </div>
       </Card>

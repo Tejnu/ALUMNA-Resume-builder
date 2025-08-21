@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -40,63 +41,65 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    // Try to use pdf-parse with better error handling
-    let result;
+    let extractedText = '';
+
     try {
-      const pdfParse = await import('pdf-parse').then(module => module.default || module);
-      
-      result = await pdfParse(buffer, {
+      // Try to use pdf-parse
+      const pdfParse = require('pdf-parse');
+      const result = await pdfParse(buffer, {
         max: 0, // parse all pages
         version: 'default'
       });
       
-      console.log('PDF parse successful, text length:', result.text?.length || 0);
+      extractedText = result.text || '';
+      console.log('PDF parse successful, text length:', extractedText.length);
       
-    } catch (parseError: any) {
-      console.error('PDF parsing error:', parseError?.message || parseError);
+    } catch (parseError) {
+      console.error('PDF parsing with pdf-parse failed:', parseError);
       
-      // Enhanced fallback: try multiple extraction methods
+      // Enhanced fallback methods
       try {
-        // Method 1: Try extracting raw text from buffer
+        // Method 1: Simple text extraction from buffer
         let textContent = buffer.toString('utf8');
-        let cleanText = textContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+        extractedText = textContent
+          .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
         
-        // Method 2: If that fails, try latin1 encoding
-        if (cleanText.length < 50) {
+        // Method 2: Try latin1 encoding if utf8 fails
+        if (extractedText.length < 50) {
           textContent = buffer.toString('latin1');
-          cleanText = textContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+          extractedText = textContent
+            .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
         }
         
-        // Method 3: Try to find text patterns in hex representation
-        if (cleanText.length < 50) {
+        // Method 3: Extract text patterns from hex
+        if (extractedText.length < 50) {
           const hexString = buffer.toString('hex');
-          const textMatches = hexString.match(/[a-fA-F0-9]{2}/g);
-          if (textMatches) {
-            cleanText = textMatches
-              .map(hex => String.fromCharCode(parseInt(hex, 16)))
-              .join('')
-              .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim();
+          const textMatches = [];
+          
+          // Look for readable ASCII patterns in hex
+          for (let i = 0; i < hexString.length; i += 2) {
+            const hex = hexString.substr(i, 2);
+            const char = String.fromCharCode(parseInt(hex, 16));
+            if (char >= ' ' && char <= '~') {
+              textMatches.push(char);
+            } else if (char === '\n' || char === '\r' || char === '\t') {
+              textMatches.push(char);
+            }
           }
+          
+          extractedText = textMatches.join('')
+            .replace(/\s+/g, ' ')
+            .trim();
         }
         
-        if (cleanText.length > 20) {
-          result = {
-            text: cleanText,
-            numpages: 1,
-            info: { Title: 'Extracted Resume' }
-          };
-          console.log('Fallback extraction successful, text length:', cleanText.length);
-        } else {
-          throw new Error('No readable text found in PDF');
-        }
+        console.log('Fallback extraction result, text length:', extractedText.length);
+        
       } catch (fallbackError) {
-        console.error('Fallback extraction failed:', fallbackError);
+        console.error('All PDF extraction methods failed:', fallbackError);
         return new NextResponse(
           JSON.stringify({ 
             error: 'Unable to parse PDF. The file may be image-based, password-protected, or corrupted. Please try uploading a DOCX or TXT file instead.',
@@ -107,22 +110,30 @@ export async function POST(req: Request) {
       }
     }
     
-    const text = (result.text || '').trim();
-    
-    if (!text || text.length < 10) {
+    // Final validation
+    if (!extractedText || extractedText.length < 10) {
       return new NextResponse(
-        JSON.stringify({ error: 'No readable text found in PDF. The file may be image-based or corrupted.' }), 
+        JSON.stringify({ 
+          error: 'No readable text found in PDF. The file may be image-based or corrupted. Please try a different format (DOCX or TXT).' 
+        }), 
         { status: 400, headers }
       );
     }
 
+    // Clean up the extracted text
+    const cleanText = extractedText
+      .replace(/\x00/g, '') // Remove null bytes
+      .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ') // Remove control characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
     const response = {
-      text: text,
-      pages: result.numpages || 0,
+      text: cleanText,
+      pages: 1,
       info: {
-        title: result.info?.Title || '',
-        author: result.info?.Author || '',
-        subject: result.info?.Subject || ''
+        title: file.name || 'Resume',
+        author: '',
+        subject: ''
       }
     };
 
@@ -130,12 +141,14 @@ export async function POST(req: Request) {
       JSON.stringify(response), 
       { status: 200, headers }
     );
-  } catch (e: any) {
-    console.error('PDF parsing error:', e);
+    
+  } catch (error) {
+    console.error('PDF parsing API error:', error);
     
     return new NextResponse(
       JSON.stringify({ 
-        error: 'PDF parsing service encountered an error. Please try uploading a DOCX or TXT file instead.' 
+        error: 'PDF parsing service encountered an error. Please try uploading a DOCX or TXT file instead.',
+        details: error instanceof Error ? error.message : 'Unknown error'
       }), 
       { status: 500, headers }
     );
