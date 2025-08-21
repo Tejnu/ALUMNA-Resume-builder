@@ -70,12 +70,18 @@ export function Header({ onFileUpload, onAIEnhance, isAIProcessing, onDownloadPD
                     target.onerror = () => {
                       const parent = target.parentElement;
                       if (parent) {
-                        parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-xl">A</span></div>';
+                        parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-xl">ALUMNA</span></div>';
                       }
                     };
                   };
                 }}
               />
+            </div>
+            <div className="hidden md:block">
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-gray-900">Alumna</h1>
+                <p className="text-sm text-gray-600">AI Resume Builder</p>
+              </div>
             </div>
           </div>
 
