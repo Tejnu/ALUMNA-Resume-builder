@@ -333,13 +333,13 @@ export default function Home() {
           id: (Date.now() + index).toString(),
           name: skill,
           level: 'Intermediate' as const,
-          category: 'General'  // Ensure you include a valid category
+          category: 'General'  // Ensure to add this property
         }));
+
         updateResumeData({
           skills: [...resumeData.skills, ...newSkills]
         });
       }
-
       // Enhance summary with job-specific content
       if (optimizations.enhanceSummary && optimizations.jobTitle) {
         const currentSummary = resumeData.personalInfo.summary || '';
