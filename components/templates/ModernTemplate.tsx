@@ -16,8 +16,8 @@ export function ModernTemplate({ resumeData }: ModernTemplateProps) {
       <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="text-center md:text-left">
-            <h1 className="text-4xl font-bold mb-2">{personalInfo?.fullName || 'Your Name'}</h1>
-            <p className="text-xl opacity-90">{workExperience?.[0]?.position || 'Professional Title'}</p>
+            <h1 className="text-4xl font-bold mb-2">{personalInfo?.fullName || ''}</h1>
+            <p className="text-xl opacity-90">{workExperience?.[0]?.position || ''}</p>
           </div>
           <div className="mt-4 md:mt-0 space-y-2 text-sm">
             {personalInfo?.email && (

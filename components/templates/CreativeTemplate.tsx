@@ -18,8 +18,8 @@ export function CreativeTemplate({ resumeData }: CreativeTemplateProps) {
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
 
         <div className="relative z-10 text-center">
-          <h1 className="text-5xl font-bold mb-3 tracking-wide">{personalInfo?.fullName || 'Your Name'}</h1>
-          <p className="text-2xl font-light opacity-90 mb-6">{workExperience?.[0]?.position || 'Creative Professional'}</p>
+          <h1 className="text-5xl font-bold mb-3 tracking-wide">{personalInfo?.fullName || ''}</h1>
+          <p className="text-2xl font-light opacity-90 mb-6">{workExperience?.[0]?.position || ''}</p>
 
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             {personalInfo?.email && (

@@ -31,7 +31,7 @@ export function ClassicTemplate({ resumeData }: ClassicTemplateProps) {
       {/* Header */}
       <div className="text-center mb-8 pb-4 border-b border-gray-300">
         <h1 className="text-3xl font-bold mb-2">
-          {personalInfo?.fullName || 'Your Name'}
+          {personalInfo?.fullName || ''}
         </h1>
         
         <div className="text-sm text-gray-600 space-y-1">

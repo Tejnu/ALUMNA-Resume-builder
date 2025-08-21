@@ -29,8 +29,8 @@ export function TechnicalTemplate({ resumeData }: TechnicalTemplateProps) {
       <div className="p-6">
         {/* Header */}
         <div className="border-l-4 border-blue-500 pl-6 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-mono">{personalInfo?.fullName || 'Your Name'}</h1>
-          <p className="text-lg text-blue-600 mb-4 font-semibold font-mono">{personalInfo?.title || 'Your Title'}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-mono">{personalInfo?.fullName || ''}</h1>
+          <p className="text-lg text-blue-600 mb-4 font-semibold font-mono">{personalInfo?.title || ''}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
             {personalInfo.email && (
               <div className="flex items-start space-x-2 text-sm text-gray-600 mb-2">

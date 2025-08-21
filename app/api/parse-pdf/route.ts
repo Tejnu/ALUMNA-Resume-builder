@@ -44,8 +44,8 @@ export async function POST(req: Request) {
     let extractedText = '';
 
     try {
-      // Try to use pdf-parse
-      const pdfParse = require('pdf-parse');
+      // Try to use pdf-parse with proper import
+      const pdfParse = (await import('pdf-parse')).default;
       const result = await pdfParse(buffer, {
         max: 0, // parse all pages
         version: 'default'

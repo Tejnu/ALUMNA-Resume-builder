@@ -15,8 +15,8 @@ export function ExecutiveTemplate({ resumeData }: ExecutiveTemplateProps) {
       {/* Header */}
       <div className="bg-slate-900 text-white p-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">{personalInfo?.fullName || 'Your Name'}</h1>
-          <p className="text-xl text-slate-300 mb-4">{workExperience?.[0]?.position || 'Executive Position'}</p>
+          <h1 className="text-4xl font-bold mb-2">{personalInfo?.fullName || ''}</h1>
+          <p className="text-xl text-slate-300 mb-4">{workExperience?.[0]?.position || ''}</p>
 
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             {personalInfo?.email && (

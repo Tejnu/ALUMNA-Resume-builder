@@ -33,7 +33,7 @@ export function MinimalTemplate({ resumeData }: MinimalTemplateProps) {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-light mb-2">
-          {personalInfo?.fullName || 'Your Name'}
+          {personalInfo?.fullName || ''}
         </h1>
         
         <div className="text-sm text-gray-600 space-y-1">
