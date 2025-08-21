@@ -159,7 +159,7 @@ ${textChunks[0].slice(0, 20000)}`
     };
 
     let resp, data, text, parsed: any = {};
-    
+
     // Retry logic for API calls
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
@@ -169,36 +169,36 @@ ${textChunks[0].slice(0, 20000)}`
           body: JSON.stringify(prompt),
           signal: AbortSignal.timeout(30000) // 30 second timeout
         });
-        
+
         if (!resp.ok) {
           throw new Error(`API request failed: ${resp.status}`);
         }
-        
+
         data = await resp.json();
         text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        
+
         if (!text) {
           throw new Error('Empty response from API');
         }
-        
+
         // Enhanced JSON extraction
         text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        
+
         // Remove any text before the first {
         const jsonStart = text.indexOf('{');
         if (jsonStart > 0) {
           text = text.substring(jsonStart);
         }
-        
+
         // Remove any text after the last }
         const jsonEnd = text.lastIndexOf('}');
         if (jsonEnd > 0) {
           text = text.substring(0, jsonEnd + 1);
         }
-        
+
         parsed = JSON.parse(text);
         break; // Success, exit retry loop
-        
+
       } catch (error) {
         console.log(`Attempt ${attempt} failed:`, error);
         if (attempt === 3) {
@@ -211,7 +211,7 @@ ${textChunks[0].slice(0, 20000)}`
 
     // Enhanced data validation and cleaning
     const result: Partial<ResumeData> = {};
-    
+
     // Personal Information with validation
     if (parsed.personalInfo && typeof parsed.personalInfo === 'object') {
       result.personalInfo = {
@@ -224,21 +224,21 @@ ${textChunks[0].slice(0, 20000)}`
         summary: (parsed.personalInfo.summary || '').trim().slice(0, 1000)
       } as any;
     }
-    
+
     // Skills with deduplication and validation
     if (Array.isArray(parsed.skills)) {
       const uniqueSkills = [...new Set(parsed.skills
         .filter((skill: string) => typeof skill === 'string' && skill.trim().length > 0)
         .map((skill: string) => skill.trim())
       )];
-      
+
       result.skills = uniqueSkills.slice(0, 30).map((name: string, i: number) => ({
         id: String(Date.now() + i),
         name: name.slice(0, 50),
         level: 'Intermediate' as const
       }));
     }
-    
+
     // Work Experience with enhanced validation
     if (Array.isArray(parsed.workExperience)) {
       result.workExperience = parsed.workExperience
@@ -254,7 +254,7 @@ ${textChunks[0].slice(0, 20000)}`
           description: (w.description || '').trim().slice(0, 2000)
         }));
     }
-    
+
     // Education with validation
     if (Array.isArray(parsed.education)) {
       result.education = parsed.education
@@ -268,7 +268,7 @@ ${textChunks[0].slice(0, 20000)}`
           graduationDate: (e.graduationDate || '').trim()
         }));
     }
-    
+
     // Certifications with validation
     if (Array.isArray(parsed.certifications)) {
       result.certifications = parsed.certifications
@@ -280,7 +280,7 @@ ${textChunks[0].slice(0, 20000)}`
           description: (c.issuer || c.description || '').trim().slice(0, 500)
         }));
     }
-    
+
     // Projects with validation
     if (Array.isArray(parsed.projects)) {
       result.projects = parsed.projects
@@ -292,7 +292,7 @@ ${textChunks[0].slice(0, 20000)}`
           description: (p.description || '').trim().slice(0, 1000)
         }));
     }
-    
+
     console.log('AI Structured Data:', {
       personalInfo: result.personalInfo,
       workExperience: result.workExperience?.length,
@@ -301,7 +301,7 @@ ${textChunks[0].slice(0, 20000)}`
       certifications: result.certifications?.length,
       projects: result.projects?.length
     });
-    
+
     return result;
   } catch {
     return null;
@@ -620,6 +620,29 @@ function buildResumeDataFromText(text: string): Partial<ResumeData> {
   } as Partial<ResumeData>;
 }
 
+async function parseTextToResumeData(rawText: string): Promise<Partial<ResumeData>> {
+  const extractedData = buildResumeDataFromText(rawText);
+  const aiData = await aiStructureFromText(rawText);
+
+  if (aiData) {
+    return {
+      ...extractedData,
+      personalInfo: {
+        ...extractedData.personalInfo,
+        ...(aiData.personalInfo || {})
+      } as any,
+      workExperience: aiData.workExperience?.length ? aiData.workExperience : extractedData.workExperience,
+      education: aiData.education?.length ? aiData.education : extractedData.education,
+      skills: aiData.skills?.length ? aiData.skills : extractedData.skills,
+      certifications: aiData.certifications?.length ? aiData.certifications : extractedData.certifications,
+      projects: aiData.projects?.length ? aiData.projects : extractedData.projects
+    } as Partial<ResumeData>;
+  }
+
+  return extractedData;
+}
+
+
 interface ResumeUploaderProps {
   onResumeExtracted: (resumeData: Partial<ResumeData>) => void;
   externalFile?: File | null;
@@ -680,6 +703,26 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
 
       // Extract actual text from the uploaded file
       let rawText = '';
+      let extractedData: Partial<ResumeData> = {
+        personalInfo: {
+          fullName: '',
+          email: '',
+          phone: '',
+          location: '',
+          linkedin: '',
+          website: '',
+          summary: ''
+        },
+        workExperience: [],
+        education: [],
+        skills: [],
+        certifications: [],
+        projects: [],
+        languages: [],
+        references: [],
+        customSections: []
+      };
+
       const isPdf = file.type === 'application/pdf' || ext === 'pdf';
       const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || ext === 'docx';
       const isTxt = file.type === 'text/plain' || ext === 'txt';
@@ -687,25 +730,25 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
       if (isPdf) {
         const body = new FormData();
         body.append('file', file);
-        
+
         try {
           const resp = await fetch('/api/parse-pdf', { 
             method: 'POST', 
             body
           });
-          
+
           if (!resp.ok) {
             const errorData = await resp.json().catch(() => ({}));
             throw new Error(errorData.error || `PDF parsing failed with status ${resp.status}`);
           }
-          
+
           const data = await resp.json();
           rawText = data.text || '';
-          
+
           if (!rawText || rawText.length < 10) {
             throw new Error('No text could be extracted from the PDF. Please try a DOCX or TXT file.');
           }
-          
+
           // Use AI structured data if available
           if (data.structuredData) {
             const aiData = data.structuredData;
@@ -745,9 +788,9 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
               customSections: []
             };
           }
-          
+
           console.log('PDF parsed successfully, text length:', rawText.length);
-          
+
         } catch (error) {
           console.error('PDF parsing error:', error);
           throw error instanceof Error ? error : new Error('Failed to parse PDF file');
@@ -761,23 +804,31 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
       }
 
       // Heuristic parse first
-      let extractedData: Partial<ResumeData> = buildResumeDataFromText(rawText || '');
+      let heuristicData: Partial<ResumeData> = buildResumeDataFromText(rawText || '');
 
       // AI structuring to improve mapping
       const aiData = await aiStructureFromText(rawText);
       if (aiData) {
         extractedData = {
-          ...extractedData,
+          ...heuristicData, // Start with heuristic data
           personalInfo: {
-            ...extractedData.personalInfo,
+            ...heuristicData.personalInfo,
             ...(aiData.personalInfo || {})
           } as any,
-          workExperience: aiData.workExperience?.length ? aiData.workExperience : extractedData.workExperience,
-          education: aiData.education?.length ? aiData.education : extractedData.education,
-          skills: aiData.skills?.length ? aiData.skills : extractedData.skills,
-          certifications: aiData.certifications?.length ? aiData.certifications : extractedData.certifications,
-          projects: aiData.projects?.length ? aiData.projects : extractedData.projects
+          workExperience: aiData.workExperience?.length ? aiData.workExperience : heuristicData.workExperience,
+          education: aiData.education?.length ? aiData.education : heuristicData.education,
+          skills: aiData.skills?.length ? aiData.skills : heuristicData.skills,
+          certifications: aiData.certifications?.length ? aiData.certifications : heuristicData.certifications,
+          projects: aiData.projects?.length ? aiData.projects : heuristicData.projects
         } as Partial<ResumeData>;
+      } else {
+        // If we couldn't get structured data from AI, use basic text parsing
+        extractedData = heuristicData;
+      }
+
+      // If still no meaningful data, use text summary
+      if (!extractedData.personalInfo?.fullName && !extractedData.workExperience?.length) {
+        extractedData.personalInfo!.summary = rawText.slice(0, 500);
       }
 
       // Ensure we have valid data structure
@@ -800,6 +851,7 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
         references: extractedData.references || [],
         customSections: extractedData.customSections || []
       };
+      
       setStatus('success');
       setCurrentStep('Resume successfully imported!');
       onResumeExtracted(finalData);
