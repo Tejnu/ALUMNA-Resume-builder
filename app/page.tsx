@@ -332,7 +332,8 @@ export default function Home() {
         const newSkills = optimizations.addSkills.map((skill: string, index: number) => ({
           id: (Date.now() + index).toString(),
           name: skill,
-          level: 'Intermediate' as const
+          level: 'Intermediate' as const,
+          category: 'General'  // Ensure you include a valid category
         }));
         updateResumeData({
           skills: [...resumeData.skills, ...newSkills]
@@ -354,7 +355,6 @@ export default function Home() {
       }
     }
   };
-
   const hasContent = resumeData.personalInfo.fullName || 
                    resumeData.workExperience.length > 0 || 
                    resumeData.education.length > 0 || 
