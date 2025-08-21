@@ -185,7 +185,14 @@ export default function Home() {
         });
       }
       if (Array.isArray(ai.skillsToAdd) && ai.skillsToAdd.length > 0) {
-        const newSkills = ai.skillsToAdd.slice(0, 10).map((s: string, i: number) => ({ id: String(Date.now() + i), name: s, level: 'Intermediate' as const }));
+        // (replace the existing single-line map on line 188 with the block below)
+        const newSkills = ai.skillsToAdd.slice(0, 10).map((s: string, i: number) => ({
+          id: (Date.now() + i).toString(),
+          name: s,
+          level: 'intermediate' as const, // lowercase to match Skill union
+          category: 'General'              // required by Skill interface
+        }));
+
         updateResumeData({ skills: [...resumeData.skills, ...newSkills] });
       }
       if (Array.isArray(ai.experienceEnhancements)) {
@@ -266,10 +273,12 @@ export default function Home() {
     switch (type) {
       case 'skill':
         const newSkills = suggestion.suggestions.map((skill: string, index: number) => ({
-          id: Date.now() + index,
+          id: (Date.now() + index).toString(),
           name: skill,
-          level: 'Intermediate' as const
+          level: 'intermediate' as const,
+          category: 'General'
         }));
+
         updateResumeData({
           skills: [...resumeData.skills, ...newSkills]
         });
@@ -316,8 +325,10 @@ export default function Home() {
         const keywordSkills = ['Agile/Scrum', 'CI/CD', 'RESTful APIs', 'Microservices', 'Cloud Computing'].map((skill, index) => ({
           id: (Date.now() + index).toString(),
           name: skill,
-          level: 'Intermediate' as const
+          level: 'intermediate' as const,
+          category: 'Technical'
         }));
+
         updateResumeData({
           skills: [...resumeData.skills, ...keywordSkills]
         });
@@ -331,8 +342,8 @@ export default function Home() {
       if (optimizations.addSkills && optimizations.addSkills.length > 0) {
         const newSkills = optimizations.addSkills.map((skill: string, index: number) => ({
           id: (Date.now() + index).toString(),
-          name: skill,
-          level: 'Intermediate' as const,
+          name: skill,  
+          level: 'intermediate' as const,
           category: 'General'  // Ensure to add this property
         }));
 
