@@ -68,52 +68,97 @@ export function ResumePreview({ resumeData }: ResumePreviewProps) {
         return;
       }
 
-      // Use browser's print functionality as primary method
+      // Get all computed styles from the current document
+      const allStyles = Array.from(document.styleSheets)
+        .map(styleSheet => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map(rule => rule.cssText)
+              .join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+
+      // Clone the element and get its full HTML
+      const clonedElement = element.cloneNode(true) as HTMLElement;
+      
+      // Create print window with all styles preserved
       const printWindow = window.open('', '_blank');
       if (printWindow) {
-        const clonedElement = element.cloneNode(true) as HTMLElement;
-
         printWindow.document.write(`
           <!DOCTYPE html>
           <html>
             <head>
               <title>${resumeData.personalInfo?.fullName || 'Resume'} - Resume</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
               <style>
+                ${allStyles}
+                
+                /* Additional print optimizations */
                 * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                  print-color-adjust: exact !important;
                 }
+                
                 body {
-                  font-family: system-ui, -apple-system, sans-serif;
-                  line-height: 1.5;
-                  color: #333;
-                  background: white;
-                  font-size: 12px;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: white !important;
+                  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
                 }
-                h1, h2, h3, h4, h5, h6 {
-                  margin-bottom: 0.5em;
-                  line-height: 1.2;
+                
+                .resume-preview-content, #resume-preview-content {
+                  width: 100% !important;
+                  max-width: none !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: white !important;
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  transform: none !important;
+                  overflow: visible !important;
+                  height: auto !important;
                 }
-                p, div {
-                  margin-bottom: 0.25em;
+                
+                /* Preserve gradients and colors */
+                .bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-l {
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
                 }
-                .lucide, svg {
-                  width: 14px;
-                  height: 14px;
-                  display: inline-block;
+                
+                /* Ensure proper spacing */
+                .p-8 { padding: 2rem !important; }
+                .p-6 { padding: 1.5rem !important; }
+                .p-4 { padding: 1rem !important; }
+                .mb-8 { margin-bottom: 2rem !important; }
+                .mb-6 { margin-bottom: 1.5rem !important; }
+                .mb-4 { margin-bottom: 1rem !important; }
+                
+                @page { 
+                  size: A4; 
+                  margin: 0.5in; 
                 }
+                
                 @media print {
-                  @page { size: A4; margin: 0.75in; }
-                  body { margin: 0; font-size: 11px; }
-                }
-                @media screen {
-                  body { padding: 20px; }
+                  body { 
+                    margin: 0 !important; 
+                    padding: 0 !important;
+                  }
+                  
+                  .no-print, .download-controls {
+                    display: none !important;
+                  }
                 }
               </style>
             </head>
             <body>
-              ${clonedElement.innerHTML}
+              <div id="resume-preview-content" class="resume-preview-content">
+                ${clonedElement.innerHTML}
+              </div>
               <script>
                 setTimeout(function() {
                   window.print();
@@ -128,6 +173,8 @@ export function ResumePreview({ resumeData }: ResumePreviewProps) {
         
         printWindow.document.close();
       }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
     } finally {
       setIsDownloading(false);
     }
