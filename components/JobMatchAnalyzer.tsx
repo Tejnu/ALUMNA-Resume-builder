@@ -72,7 +72,7 @@ export function JobMatchAnalyzer({ resumeData, onOptimize }: JobMatchAnalyzerPro
       ${resumeData.personalInfo.title || ''} 
       ${resumeData.personalInfo.summary || ''} 
       ${resumeData.workExperience.map(exp => `${exp.position} ${exp.company} ${exp.description}`).join(' ')}
-      ${resumeData.education.map(edu => `${edu.degree} ${edu.school} ${edu.field || ''}`).join(' ')}
+      ${resumeData.education.map(edu => `${edu.degree} ${edu.school} ${edu.field || ''}`).join(' ')}in(' ')}
       ${resumeData.skills.map(skill => skill.name).join(' ')}
       ${resumeData.projects?.map(proj => `${proj.name} ${proj.description} ${proj.technologies?.join(' ') || ''}`).join(' ') || ''}
       ${resumeData.certifications?.map(cert => `${cert.name} ${cert.issuer}`).join(' ') || ''}
