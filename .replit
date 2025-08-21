@@ -25,4 +25,17 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Test PDF Parser"
+author = 46724075
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "curl -X POST http://localhost:3000/api/parse-pdf -F \"file=@test-resume.txt\" -H \"Accept: application/json\""
