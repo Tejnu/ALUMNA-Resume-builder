@@ -1,0 +1,32 @@
+
+John Doe
+Software Engineer
+john.doe@email.com
+(555) 123-4567
+New York, NY
+
+SUMMARY
+Experienced software engineer with 5+ years developing web applications using modern technologies.
+
+WORK EXPERIENCE
+
+Senior Software Engineer at Google
+2021 - Present
+• Developed scalable web applications using React and Node.js
+• Led a team of 5 developers on critical projects
+• Improved application performance by 40%
+
+Software Developer at Microsoft
+2019 - 2021
+• Built REST APIs using Python and Django
+• Collaborated with cross-functional teams
+• Implemented automated testing frameworks
+
+SKILLS
+JavaScript, Python, React, Node.js, Django, SQL, AWS, Git
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of California, Berkeley
+2015 - 2019

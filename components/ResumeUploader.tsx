@@ -706,6 +706,46 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
             throw new Error('No text could be extracted from the PDF. Please try a DOCX or TXT file.');
           }
           
+          // Use AI structured data if available
+          if (data.structuredData) {
+            const aiData = data.structuredData;
+            extractedData = {
+              personalInfo: {
+                fullName: aiData.personalInfo?.fullName || '',
+                email: aiData.personalInfo?.email || '',
+                phone: aiData.personalInfo?.phone || '',
+                location: aiData.personalInfo?.location || '',
+                summary: aiData.personalInfo?.summary || ''
+              },
+              workExperience: (aiData.workExperience || []).map((w: any, i: number) => ({
+                id: `work_${Date.now()}_${i}`,
+                company: w.company || '',
+                position: w.position || '',
+                startDate: w.startDate || '',
+                endDate: w.endDate || '',
+                isCurrentJob: !w.endDate || w.endDate === '',
+                description: w.description || ''
+              })),
+              education: (aiData.education || []).map((e: any, i: number) => ({
+                id: `edu_${Date.now()}_${i}`,
+                school: e.school || '',
+                degree: e.degree || '',
+                field: e.field || '',
+                graduationDate: e.graduationDate || ''
+              })),
+              skills: (aiData.skills || []).map((skill: string, i: number) => ({
+                id: `skill_${Date.now()}_${i}`,
+                name: skill,
+                level: 'Intermediate' as const
+              })),
+              certifications: [],
+              projects: [],
+              languages: [],
+              references: [],
+              customSections: []
+            };
+          }
+          
           console.log('PDF parsed successfully, text length:', rawText.length);
           
         } catch (error) {

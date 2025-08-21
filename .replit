@@ -5,7 +5,8 @@ run = "npm install &&  run dev"
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "npm install &&  run dev"]
+run = ["sh", "-c", "npm start"]
+build = ["sh", "-c", "npm run build"]
 
 [[ports]]
 localPort = 3000
@@ -39,3 +40,20 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "curl -X POST http://localhost:3000/api/parse-pdf -F \"file=@test-resume.txt\" -H \"Accept: application/json\""
+
+[[workflows.workflow]]
+name = "Production Build"
+author = 46724075
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
