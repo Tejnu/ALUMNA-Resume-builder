@@ -25,204 +25,283 @@ async function aiStructureFromText(rawText: string): Promise<Partial<ResumeData>
     const apiKey = "AIzaSyCz2zg2PZ_QkmN8F18ov_RnhVP0T0PKM4A";
     if (!apiKey || !rawText || rawText.length < 20) return null;
 
+    // Clean and prepare the text for better parsing
+    const cleanedText = rawText
+      .replace(/[^\x20-\x7E\n\r\t]/g, ' ') // Remove non-printable characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/(.)\1{4,}/g, '$1') // Remove repeated characters
+      .trim();
+
+    // Split into chunks if text is too long
+    const maxChunkSize = 25000;
+    const textChunks = [];
+    for (let i = 0; i < cleanedText.length; i += maxChunkSize) {
+      textChunks.push(cleanedText.slice(i, i + maxChunkSize));
+    }
+
     const prompt = {
       contents: [
         {
           role: 'user',
           parts: [
             {
-              text: `**CRITICAL PARSING RULES:**
+              text: `You are an EXPERT resume parser with 10+ years of experience. Your job is to intelligently extract and categorize resume information.
 
-You are an expert resume parser. Follow these STRICT categorization rules:
+**INTELLIGENT PARSING STRATEGY:**
+1. Scan the ENTIRE document for patterns
+2. Use context clues to identify sections
+3. Cross-reference information for accuracy
+4. Handle various formatting styles
+5. Prioritize structured data over raw text
 
-**1. WORK EXPERIENCE (HIGHEST PRIORITY):**
-- Patterns: "Title at Company", "Company - Title", "Title | Company"
-- Date formats: "2020-2023", "Jan 2020 - Present", "2019 to 2022"
-- Action verbs: "Managed", "Developed", "Led", "Implemented", "Created"
-- Include: Full-time, part-time, contract, freelance, consulting
-- Exclude: Academic internships (those go in education)
+**SECTION IDENTIFICATION PATTERNS:**
 
-**2. SKILLS (TECHNICAL ONLY):**
-- Programming: JavaScript, Python, Java, C++, C#, PHP, Ruby, Go, Swift, Kotlin, TypeScript, R, Scala, Rust
-- Frontend: React, Angular, Vue.js, HTML, CSS, SASS, Bootstrap, Tailwind, jQuery
-- Backend: Node.js, Express, Django, Flask, Spring, Laravel, ASP.NET
-- Databases: SQL, MySQL, PostgreSQL, MongoDB, Redis, Oracle, SQLite
-- Cloud/DevOps: AWS, Azure, GCP, Docker, Kubernetes, Jenkins, CI/CD, Terraform
-- Tools: Git, GitHub, GitLab, Jira, Linux, Figma, Photoshop
-- Technologies: Machine Learning, AI, Blockchain, IoT, Microservices, REST API, GraphQL
-- **EXCLUDE:** Soft skills (communication, leadership, teamwork, problem-solving)
-- **EXCLUDE:** Job titles, company names, or general terms
+**PERSONAL INFORMATION (TOP PRIORITY):**
+- Name: First 3 lines, proper capitalization, 2-4 words, no special characters
+- Email: Unique @ pattern, .com/.org/.edu domains
+- Phone: (XXX) XXX-XXXX, XXX-XXX-XXXX, +X-XXX-XXX-XXXX patterns
+- Location: City, State | City, Country | State, ZIP patterns
+- LinkedIn: linkedin.com/in/[username] patterns
+- GitHub: github.com/[username] patterns
+- Website: http/https domains excluding LinkedIn/GitHub
+- Summary: Paragraph after contact info, 50-300 words, describes career
 
-**3. EDUCATION (ACADEMIC DEGREES ONLY):**
-- Degrees: Bachelor's, Master's, PhD, Associate, Diploma, Certificate
-- Institutions: University, College, Institute, School, Academy
-- Fields: Computer Science, Engineering, Business, Medicine, Arts
-- Include: GPA, honors, thesis topics
-- **EXCLUDE:** Professional certifications, online courses, workshops
+**WORK EXPERIENCE (CRITICAL SECTION):**
+Look for these EXACT patterns:
+- "Software Engineer at Google" → Position: Software Engineer, Company: Google
+- "Google - Software Engineer" → Company: Google, Position: Software Engineer  
+- "Senior Developer | Microsoft" → Position: Senior Developer, Company: Microsoft
+- Date patterns: "2020-2023", "Jan 2020 - Present", "2019 to 2022", "June 2021 - Current"
+- Bullet points starting with action verbs: Developed, Led, Managed, Implemented, Created, Built, Designed
+- Achievement indicators: "increased by X%", "reduced by X", "managed team of X", "generated $X"
 
-**4. CERTIFICATIONS (PROFESSIONAL CREDENTIALS):**
-- Professional: AWS Certified, Google Cloud, Microsoft Azure, PMP, CISSP, CPA
-- Industry: CompTIA, Cisco, Oracle, Salesforce, Adobe Certified
-- Training: Coursera certificates, Udemy completions, edX credentials
-- **SEPARATE from education degrees**
+**SKILLS (TECHNICAL FOCUS):**
+Extract ONLY these categories:
+- Programming Languages: JavaScript, Python, Java, C++, C#, TypeScript, Go, Rust, Swift, Kotlin, Ruby, PHP, Scala, R, MATLAB
+- Frontend: React, Angular, Vue.js, HTML5, CSS3, SASS, Bootstrap, Tailwind CSS, jQuery, Webpack, Next.js
+- Backend: Node.js, Express, Django, Flask, Spring Boot, Laravel, ASP.NET, Ruby on Rails, FastAPI
+- Databases: MySQL, PostgreSQL, MongoDB, Redis, Oracle, SQLite, DynamoDB, Firebase, Cassandra
+- Cloud/DevOps: AWS, Azure, GCP, Docker, Kubernetes, Jenkins, CI/CD, Terraform, Ansible
+- Tools: Git, GitHub, GitLab, Jira, Linux, Docker, Figma, Photoshop, VS Code, IntelliJ
 
-**5. PROJECTS (PERSONAL/PROFESSIONAL WORK):**
-- Personal projects, portfolio items, side projects
-- Open source contributions, GitHub repositories
-- Research projects, thesis work
-- Mobile apps, websites, software systems built
-- Include technologies used and brief descriptions
+**EDUCATION (ACADEMIC DEGREES):**
+- Degree patterns: "Bachelor of Science", "Master of Arts", "PhD in", "B.S.", "M.S.", "MBA"
+- Institution indicators: "University", "College", "Institute", "School"
+- Field patterns: "Computer Science", "Engineering", "Business Administration", "Information Technology"
+- Date patterns: "2020", "2018-2022", "Graduated 2021"
 
-**6. PERSONAL INFO:**
-- Name: Usually first 1-2 lines, properly capitalized
-- Email: Contains @ symbol
-- Phone: Numeric patterns with/without formatting
-- Location: City, State/Country format
-- LinkedIn: linkedin.com/in/username
-- GitHub: github.com/username
-- Portfolio: Personal website URLs
-- Summary: Professional objective or summary paragraph
+**SMART EXTRACTION RULES:**
+1. If name appears multiple times, use the most complete version
+2. Prefer work experience with dates and company names
+3. Extract skills from context, not just lists
+4. Identify current job from "Present", "Current", or recent dates
+5. Parse multi-line descriptions as single entries
+6. Handle various bullet point styles (•, -, *, numbers)
 
-**PARSING INSTRUCTIONS:**
-- Use section headers as primary guides: "Experience", "Skills", "Education", "Projects"
-- Chronological order for work experience (newest first)
-- Technical skills only - filter out soft skills completely
-- Parse bullet points and preserve formatting
-- Extract dates consistently (YYYY-MM format)
-- Identify current vs past positions
-- Smart context analysis for ambiguous items
+**OUTPUT REQUIREMENTS:**
+Return ONLY valid JSON. No explanations, no markdown, just pure JSON:
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON with this EXACT structure:
 {
   "personalInfo": {
-    "fullName": "string",
-    "email": "string",
-    "phone": "string", 
-    "location": "string",
-    "linkedin": "string",
-    "website": "string",
-    "summary": "string"
+    "fullName": "extracted_full_name",
+    "email": "extracted_email",
+    "phone": "extracted_phone",
+    "location": "extracted_location", 
+    "linkedin": "extracted_linkedin_url",
+    "website": "extracted_website_url",
+    "summary": "extracted_summary_or_objective"
   },
   "workExperience": [
     {
-      "id": "string",
-      "company": "string",
-      "position": "string",
+      "id": "work_1",
+      "company": "company_name",
+      "position": "job_title",
       "startDate": "YYYY-MM",
-      "endDate": "YYYY-MM or empty",
-      "isCurrentJob": boolean,
-      "description": "detailed description with achievements"
+      "endDate": "YYYY-MM or empty if current",
+      "isCurrentJob": true_or_false,
+      "description": "comprehensive_description_with_achievements"
     }
   ],
   "education": [
     {
-      "id": "string", 
-      "school": "string",
-      "degree": "string",
-      "field": "string",
+      "id": "edu_1",
+      "school": "institution_name",
+      "degree": "degree_type",
+      "field": "field_of_study",
       "graduationDate": "YYYY-MM"
     }
   ],
   "skills": ["skill1", "skill2", "skill3"],
   "certifications": [
     {
-      "id": "string",
-      "name": "certification_name", 
+      "id": "cert_1",
+      "name": "certification_name",
       "issuer": "issuing_organization",
       "dateObtained": "YYYY-MM"
     }
   ],
   "projects": [
     {
-      "id": "string",
+      "id": "proj_1", 
       "name": "project_name",
-      "description": "project_description", 
+      "description": "project_description",
       "technologies": ["tech1", "tech2"]
     }
   ]
 }
 
-**Resume text to analyze:**
-${rawText.slice(0, 15000)}` // Extended limit for better parsing
+**RESUME TEXT TO ANALYZE:**
+${textChunks[0].slice(0, 20000)}`
             }
           ]
         }
       ]
     };
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(prompt)
-    });
-    const data = await resp.json();
-    let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // Clean up the response to extract JSON
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-    let parsed: any = {};
-    try { 
-      parsed = JSON.parse(text); 
-    } catch (parseError) {
-      console.log('JSON parse error:', parseError);
-      return null;
+    let resp, data, text, parsed: any = {};
+    
+    // Retry logic for API calls
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(prompt),
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
+        
+        if (!resp.ok) {
+          throw new Error(`API request failed: ${resp.status}`);
+        }
+        
+        data = await resp.json();
+        text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        
+        if (!text) {
+          throw new Error('Empty response from API');
+        }
+        
+        // Enhanced JSON extraction
+        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        
+        // Remove any text before the first {
+        const jsonStart = text.indexOf('{');
+        if (jsonStart > 0) {
+          text = text.substring(jsonStart);
+        }
+        
+        // Remove any text after the last }
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonEnd > 0) {
+          text = text.substring(0, jsonEnd + 1);
+        }
+        
+        parsed = JSON.parse(text);
+        break; // Success, exit retry loop
+        
+      } catch (error) {
+        console.log(`Attempt ${attempt} failed:`, error);
+        if (attempt === 3) {
+          console.log('All attempts failed, returning null');
+          return null;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+      }
     }
 
+    // Enhanced data validation and cleaning
     const result: Partial<ResumeData> = {};
-    if (parsed.personalInfo) {
+    
+    // Personal Information with validation
+    if (parsed.personalInfo && typeof parsed.personalInfo === 'object') {
       result.personalInfo = {
-        fullName: parsed.personalInfo.fullName || '',
-        email: parsed.personalInfo.email || '',
-        phone: parsed.personalInfo.phone || '',
-        location: parsed.personalInfo.location || '',
-        linkedin: parsed.personalInfo.linkedin || '',
-        website: parsed.personalInfo.website || '',
-        summary: parsed.personalInfo.summary || ''
+        fullName: (parsed.personalInfo.fullName || '').trim().slice(0, 100),
+        email: (parsed.personalInfo.email || '').toLowerCase().trim(),
+        phone: (parsed.personalInfo.phone || '').replace(/[^\d\-\(\)\+\s]/g, '').trim(),
+        location: (parsed.personalInfo.location || '').trim().slice(0, 100),
+        linkedin: (parsed.personalInfo.linkedin || '').trim(),
+        website: (parsed.personalInfo.website || '').trim(),
+        summary: (parsed.personalInfo.summary || '').trim().slice(0, 1000)
       } as any;
     }
+    
+    // Skills with deduplication and validation
     if (Array.isArray(parsed.skills)) {
-      result.skills = parsed.skills.slice(0, 40).map((name: string, i: number) => ({
+      const uniqueSkills = [...new Set(parsed.skills
+        .filter((skill: string) => typeof skill === 'string' && skill.trim().length > 0)
+        .map((skill: string) => skill.trim())
+      )];
+      
+      result.skills = uniqueSkills.slice(0, 30).map((name: string, i: number) => ({
         id: String(Date.now() + i),
-        name,
+        name: name.slice(0, 50),
         level: 'Intermediate' as const
       }));
     }
+    
+    // Work Experience with enhanced validation
     if (Array.isArray(parsed.workExperience)) {
-      result.workExperience = parsed.workExperience.slice(0, 10).map((w: any, i: number) => ({
-        id: w.id || String(Date.now() + i),
-        company: w.company || '',
-        position: w.position || '',
-        startDate: w.startDate || '',
-        endDate: w.endDate || '',
-        isCurrentJob: Boolean(w.isCurrentJob),
-        description: w.description || ''
-      }));
+      result.workExperience = parsed.workExperience
+        .filter((w: any) => w && w.company && w.position)
+        .slice(0, 8)
+        .map((w: any, i: number) => ({
+          id: w.id || `work_${Date.now()}_${i}`,
+          company: (w.company || '').trim().slice(0, 100),
+          position: (w.position || '').trim().slice(0, 100),
+          startDate: (w.startDate || '').trim(),
+          endDate: (w.endDate || '').trim(),
+          isCurrentJob: Boolean(w.isCurrentJob),
+          description: (w.description || '').trim().slice(0, 2000)
+        }));
     }
+    
+    // Education with validation
     if (Array.isArray(parsed.education)) {
-      result.education = parsed.education.slice(0, 10).map((e: any, i: number) => ({
-        id: e.id || String(Date.now() + i),
-        school: e.school || '',
-        degree: e.degree || '',
-        field: e.field || '',
-        graduationDate: e.graduationDate || ''
-      }));
+      result.education = parsed.education
+        .filter((e: any) => e && (e.school || e.degree))
+        .slice(0, 5)
+        .map((e: any, i: number) => ({
+          id: e.id || `edu_${Date.now()}_${i}`,
+          school: (e.school || '').trim().slice(0, 100),
+          degree: (e.degree || '').trim().slice(0, 100),
+          field: (e.field || '').trim().slice(0, 100),
+          graduationDate: (e.graduationDate || '').trim()
+        }));
     }
+    
+    // Certifications with validation
     if (Array.isArray(parsed.certifications)) {
-      result.certifications = parsed.certifications.slice(0, 10).map((c: any, i: number) => ({
-        id: c.id || String(Date.now() + i),
-        name: c.name || '',
-        description: c.description || ''
-      }));
+      result.certifications = parsed.certifications
+        .filter((c: any) => c && c.name)
+        .slice(0, 8)
+        .map((c: any, i: number) => ({
+          id: c.id || `cert_${Date.now()}_${i}`,
+          name: (c.name || '').trim().slice(0, 100),
+          description: (c.issuer || c.description || '').trim().slice(0, 500)
+        }));
     }
+    
+    // Projects with validation
     if (Array.isArray(parsed.projects)) {
-      result.projects = parsed.projects.slice(0, 10).map((p: any, i: number) => ({
-        id: p.id || String(Date.now() + i),
-        name: p.name || '',
-        description: p.description || ''
-      }));
+      result.projects = parsed.projects
+        .filter((p: any) => p && p.name)
+        .slice(0, 6)
+        .map((p: any, i: number) => ({
+          id: p.id || `proj_${Date.now()}_${i}`,
+          name: (p.name || '').trim().slice(0, 100),
+          description: (p.description || '').trim().slice(0, 1000)
+        }));
     }
+    
+    console.log('AI Structured Data:', {
+      personalInfo: result.personalInfo,
+      workExperience: result.workExperience?.length,
+      education: result.education?.length,
+      skills: result.skills?.length,
+      certifications: result.certifications?.length,
+      projects: result.projects?.length
+    });
+    
     return result;
   } catch {
     return null;
@@ -583,14 +662,14 @@ export function ResumeUploader({ onResumeExtracted, externalFile, onExternalFile
 
       // Realistic processing steps with progress updates
       const steps = [
-        { message: 'Initializing AI document parser...', progress: 10, delay: 600 },
-        { message: 'Extracting text content...', progress: 25, delay: 1200 },
-        { message: 'Identifying resume sections...', progress: 40, delay: 1000 },
-        { message: 'Parsing contact information...', progress: 55, delay: 800 },
-        { message: 'Analyzing work experience...', progress: 70, delay: 1100 },
-        { message: 'Processing skills and education...', progress: 85, delay: 900 },
-        { message: 'Optimizing content structure...', progress: 95, delay: 700 },
-        { message: 'Finalizing import...', progress: 100, delay: 500 }
+        { message: 'Initializing smart AI resume parser...', progress: 10, delay: 500 },
+        { message: 'Extracting text from document...', progress: 20, delay: 800 },
+        { message: 'Identifying personal information...', progress: 35, delay: 700 },
+        { message: 'Parsing work experience and dates...', progress: 50, delay: 900 },
+        { message: 'Analyzing skills and technologies...', progress: 65, delay: 800 },
+        { message: 'Processing education and certifications...', progress: 80, delay: 700 },
+        { message: 'Structuring resume sections...', progress: 90, delay: 600 },
+        { message: 'Finalizing smart import...', progress: 100, delay: 400 }
       ];
 
       for (const step of steps) {

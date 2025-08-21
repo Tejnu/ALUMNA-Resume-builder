@@ -44,11 +44,20 @@ export async function POST(req: Request) {
     let extractedText = '';
 
     try {
-      // Try to use pdf-parse with proper import
-      const pdfParse = (await import('pdf-parse')).default;
+      // Try to use pdf-parse with enhanced error handling
+      let pdfParse;
+      try {
+        pdfParse = (await import('pdf-parse')).default;
+      } catch (importError) {
+        console.log('PDF-parse import failed, using fallback');
+        throw new Error('PDF library unavailable');
+      }
+      
       const result = await pdfParse(buffer, {
         max: 0, // parse all pages
-        version: 'default'
+        version: 'default',
+        normalizeWhitespace: true,
+        disableCombineTextItems: false
       });
       
       extractedText = result.text || '';
@@ -75,23 +84,47 @@ export async function POST(req: Request) {
             .trim();
         }
         
-        // Method 3: Extract text patterns from hex
+        // Method 3: Advanced pattern extraction from buffer
         if (extractedText.length < 50) {
-          const hexString = buffer.toString('hex');
-          const textMatches = [];
+          const bufferString = buffer.toString('binary');
+          const textPatterns = [];
           
-          // Look for readable ASCII patterns in hex
-          for (let i = 0; i < hexString.length; i += 2) {
-            const hex = hexString.substr(i, 2);
-            const char = String.fromCharCode(parseInt(hex, 16));
-            if (char >= ' ' && char <= '~') {
-              textMatches.push(char);
-            } else if (char === '\n' || char === '\r' || char === '\t') {
-              textMatches.push(char);
+          // Extract text between common PDF markers
+          const textRegex = /\(([^)]+)\)/g;
+          let match;
+          while ((match = textRegex.exec(bufferString)) !== null) {
+            if (match[1] && match[1].length > 2) {
+              textPatterns.push(match[1]);
             }
           }
           
-          extractedText = textMatches.join('')
+          // Extract text after 'Tj' operators (PDF text operators)
+          const tjRegex = /\s+([A-Za-z0-9\s.,;:!?'"()-]+)\s+Tj/g;
+          while ((match = tjRegex.exec(bufferString)) !== null) {
+            if (match[1] && match[1].trim().length > 1) {
+              textPatterns.push(match[1].trim());
+            }
+          }
+          
+          extractedText = textPatterns.join(' ')
+            .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+        
+        // Method 4: Look for readable ASCII sequences
+        if (extractedText.length < 50) {
+          const asciiText = [];
+          for (let i = 0; i < buffer.length; i++) {
+            const byte = buffer[i];
+            if ((byte >= 32 && byte <= 126) || byte === 10 || byte === 13 || byte === 9) {
+              asciiText.push(String.fromCharCode(byte));
+            } else if (asciiText.length > 0 && asciiText[asciiText.length - 1] !== ' ') {
+              asciiText.push(' ');
+            }
+          }
+          
+          extractedText = asciiText.join('')
             .replace(/\s+/g, ' ')
             .trim();
         }
