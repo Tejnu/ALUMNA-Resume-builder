@@ -26,7 +26,7 @@ const nextConfig = {
 
     // Optimize pdf-parse bundle
     config.module = config.module || {};
-    config.module.rules = config.module || [];
+    config.module.rules = config.module.rules || [];
     config.module.rules.push({
       test: /pdf-parse/,
       use: {
