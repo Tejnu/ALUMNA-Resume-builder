@@ -1,0 +1,30 @@
+John Smith
+Software Developer
+john.smith@email.com
+(555) 123-4567
+New York, NY
+
+PROFESSIONAL SUMMARY
+Experienced software developer with 5+ years in web development using React, Node.js, and Python.
+
+WORK EXPERIENCE
+
+Senior Software Developer
+ABC Tech Company | Jan 2020 - Present
+• Developed and maintained React applications for 50,000+ users
+• Led a team of 4 developers on multiple projects
+• Implemented CI/CD pipelines reducing deployment time by 60%
+
+Software Developer
+XYZ Solutions | Jun 2018 - Dec 2019
+• Built REST APIs using Node.js and Express
+• Collaborated with cross-functional teams
+• Improved application performance by 40%
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+State University | 2014 - 2018
+
+SKILLS
+JavaScript, React, Node.js, Python, SQL, Git, Docker, AWS
